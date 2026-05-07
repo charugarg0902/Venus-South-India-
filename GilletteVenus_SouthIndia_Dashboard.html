@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gillette Venus — South India Sentiment Dashboard 2025–26</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  :root {
+    --navy:   #003366;
+    --navy2:  #004080;
+    --blue:   #0077C8;
+    --pos:    #22A699;
+    --pos-lt: #D0F0EB;
+    --neu:    #F5A623;
+    --neu-lt: #FEF0D5;
+    --neg:    #D64045;
+    --neg-lt: #FAE0E1;
+    --bg:     #F1F3F8;
+    --card:   #FFFFFF;
+    --txt:    #0F1B35;
+    --txt2:   #506080;
+    --border: #E0E6EF;
+    --tn:     #E8580C;
+    --ka:     #3A7D44;
+    --kl:     #1565C0;
+    --ts:     #7B1FA2;
+    --ap:     #C62828;
+    --light:  #F4F6FA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--txt); }
+
+  .top-bar {
+    background: var(--navy);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; border-bottom: 3px solid var(--blue);
+  }
+  .top-bar .logo { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .top-bar .logo span { color: #5BC8F5; }
+  .top-bar .meta { font-size: 11px; color: rgba(255,255,255,0.5); text-align: right; line-height: 1.6; }
+  .top-bar .meta strong { color: rgba(255,255,255,0.9); font-weight: 500; }
+
+  .quarter-banner {
+    background: var(--navy2);
+    padding: 10px 40px;
+    display: flex; gap: 0;
+  }
+  .q-seg {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 20px; flex: 1;
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  .q-seg:last-child { border-right: none; }
+  .q-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .q-seg .label { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.3; }
+  .q-seg .label strong { display: block; font-size: 12px; color: #fff; font-weight: 600; }
+
+  .dashboard { padding: 24px 40px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--txt2);
+    margin-bottom: 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .row { display: flex; gap: 16px; margin-bottom: 20px; align-items: stretch; }
+  .card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 20px 22px; position: relative; overflow: hidden; }
+  .chart-card { flex: 1; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 16px 18px; position: relative; overflow: hidden; }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .kpi-card.pos::before { background: var(--pos); }
+  .kpi-card.neu::before { background: var(--neu); }
+  .kpi-card.neg::before { background: var(--neg); }
+  .kpi-card.net::before { background: var(--navy); }
+  .kpi-card.tot::before { background: var(--blue); }
+  .kpi-label { font-size: 11px; color: var(--txt2); font-weight: 500; margin-bottom: 6px; }
+  .kpi-val { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; line-height: 1; }
+  .kpi-val.pos { color: var(--pos); } .kpi-val.neu { color: var(--neu); }
+  .kpi-val.neg { color: var(--neg); } .kpi-val.net { color: var(--navy); }
+  .kpi-val.tot { color: var(--blue); }
+  .kpi-sub { font-size: 11px; color: var(--txt2); margin-top: 6px; }
+
+  .card-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt); margin-bottom: 4px; }
+  .card-sub { font-size: 11px; color: var(--txt2); margin-bottom: 14px; }
+
+  .legend { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--txt2); }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .stacked-bar { display: flex; height: 20px; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .sb-seg { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: 600; }
+
+  .trend { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .trend.up { background: var(--pos-lt); color: #0B6B62; }
+  .trend.dn { background: var(--neg-lt); color: #8B1E21; }
+  .trend.fl { background: var(--neu-lt); color: #7A5000; }
+
+  .state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .state-card { border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
+  .state-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .state-n { font-size: 10px; color: var(--txt2); margin-bottom: 6px; }
+  .state-bar { display: flex; height: 14px; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+  .state-net { font-size: 11px; font-weight: 600; }
+
+  .phase-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .phase-bar-label { width: 130px; color: var(--txt2); flex-shrink: 0; font-size: 10px; }
+  .phase-bar-outer { flex: 1; height: 12px; background: #EEF1F7; border-radius: 3px; overflow: hidden; }
+  .phase-bar-inner { height: 100%; border-radius: 3px; }
+  .phase-bar-pct { width: 36px; text-align: right; font-weight: 600; font-size: 10px; }
+
+  .kw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .chip.pos { background: var(--pos-lt); color: #0B6B62; }
+  .chip.neg { background: var(--neg-lt); color: #8B1E21; }
+  .chip.skin { background: #FDE8D0; color: #7A3800; border: 1px solid #F0C4A0; }
+
+  .insight-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+  .insight-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .insight-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+  .insight-body { font-size: 11px; color: var(--txt2); line-height: 1.4; }
+
+  .footer { background: var(--navy); padding: 14px 40px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .footer p { font-size: 11px; color: rgba(255,255,255,0.4); }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Gillette<span> Venus</span> — South India Sentiment Report</div>
+  <div class="meta">
+    <strong>Period: May 2025 – April 2026  ·  n = 188 (Location-Inferred Base)</strong><br>
+    States: Tamil Nadu · Karnataka · Kerala · Telangana · Andhra Pradesh<br>
+    Prepared for: Senior Leadership Review  ·  Women's Range Only
+  </div>
+</div>
+
+<div class="quarter-banner">
+  <div class="q-seg">
+    <div class="q-dot" style="background:#7C5CBF;"></div>
+    <div class="label"><strong>Q2 2025 — May to Jun</strong>n=29 · Net Sentiment +13.8%</div>
+  </div>
+  <div class="q-seg">
+    <div class="q-dot" style="background:#E05C18;"></div>
+    <div class="label"><strong>Q3 2025 — Jul to Sep</strong>n=54 · Net Sentiment +31.5%</div>
+  </div>
+  <div class="q-seg">
+    <div class="q-dot" style="background:#2575FC;"></div>
+    <div class="label"><strong>Q4 2025 — Oct to Dec</strong>n=49 · Net Sentiment +20.4%</div>
+  </div>
+  <div class="q-seg">
+    <div class="q-dot" style="background:#0AB68B;"></div>
+    <div class="label"><strong>Q1 2026 — Jan to Apr</strong>n=44 · Net Sentiment +70.5%</div>
+  </div>
+  <div class="q-seg" style="flex:0.5; min-width:100px;">
+    <div class="q-dot" style="background:#5BC8F5;"></div>
+    <div class="label"><strong>Base: n=188</strong>Location-Inferred</div>
+  </div>
+</div>
+
+<div class="dashboard">
+
+  <div class="section-label">Overall Brand Sentiment KPIs — South India · May 2025 – Apr 2026</div>
+  <div class="kpi-grid">
+    <div class="kpi-card tot">
+      <div class="kpi-label">Total Reviews (South)</div>
+      <div class="kpi-val tot">188</div>
+      <div class="kpi-sub">Location-inferred base</div>
+    </div>
+    <div class="kpi-card pos">
+      <div class="kpi-label">Positive Reviews</div>
+      <div class="kpi-val pos">102</div>
+      <div class="kpi-sub">54.3% share</div>
+    </div>
+    <div class="kpi-card neu">
+      <div class="kpi-label">Neutral Reviews</div>
+      <div class="kpi-val neu">51</div>
+      <div class="kpi-sub">27.1% share</div>
+    </div>
+    <div class="kpi-card neg">
+      <div class="kpi-label">Negative Reviews</div>
+      <div class="kpi-val neg">35</div>
+      <div class="kpi-sub">18.6% share</div>
+    </div>
+    <div class="kpi-card net">
+      <div class="kpi-label">Net Sentiment Score</div>
+      <div class="kpi-val net">+35.6%</div>
+      <div class="kpi-sub">(Pos − Neg) / Total</div>
+    </div>
+  </div>
+
+  <div class="section-label">Sentiment Trend — Monthly & Quarterly</div>
+  <div class="row">
+    <div class="card chart-card" style="flex:2;">
+      <div class="card-title">Monthly Sentiment Trend — South India</div>
+      <div class="card-sub">Stacked % · Positive / Neutral / Negative per month · n=188</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:#22A699;"></span>Positive %</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#F5A623;"></span>Neutral %</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#D64045;"></span>Negative %</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#7C5CBF;border-radius:1px;"></span>Q2 2025</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#E05C18;border-radius:1px;"></span>Q3 2025</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#2575FC;border-radius:1px;"></span>Q4 2025</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#0AB68B;border-radius:1px;"></span>Q1 2026</span>
+      </div>
+      <div style="position:relative;width:100%;height:230px;">
+        <canvas id="trendChart">Monthly South India Gillette Venus sentiment data May 2025 to April 2026.</canvas>
+      </div>
+    </div>
+
+    <div class="card" style="width:270px;flex-shrink:0;">
+      <div class="card-title">Quarterly KPI Summary</div>
+      <div class="card-sub">Absolute % · n-weighted base</div>
+
+      <div style="margin-bottom:13px;padding-bottom:13px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <span style="font-size:12px;font-weight:600;color:#7C5CBF;">Q2 2025</span>
+          <span class="trend dn">Net +13.8%</span>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">May–Jun 2025 · n=29 · Weakest quarter</div>
+        <div class="stacked-bar">
+          <div class="sb-seg" style="background:#22A699;width:37.9%;">37.9%</div>
+          <div class="sb-seg" style="background:#F5A623;width:37.9%;">37.9%</div>
+          <div class="sb-seg" style="background:#D64045;width:24.1%;">24.1%</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:13px;padding-bottom:13px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <span style="font-size:12px;font-weight:600;color:#E05C18;">Q3 2025</span>
+          <span class="trend fl">Net +31.5%</span>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Jul–Sep 2025 · n=54 · Largest base</div>
+        <div class="stacked-bar">
+          <div class="sb-seg" style="background:#22A699;width:51.9%;">51.9%</div>
+          <div class="sb-seg" style="background:#F5A623;width:27.8%;">27.8%</div>
+          <div class="sb-seg" style="background:#D64045;width:20.4%;">20.4%</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:13px;padding-bottom:13px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <span style="font-size:12px;font-weight:600;color:#2575FC;">Q4 2025</span>
+          <span class="trend fl">Net +20.4%</span>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Oct–Dec 2025 · n=49 · Cost concerns peak</div>
+        <div class="stacked-bar">
+          <div class="sb-seg" style="background:#22A699;width:46.9%;">46.9%</div>
+          <div class="sb-seg" style="background:#F5A623;width:26.5%;">26.5%</div>
+          <div class="sb-seg" style="background:#D64045;width:26.5%;">26.5%</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <span style="font-size:12px;font-weight:600;color:#0AB68B;">Q1 2026</span>
+          <span class="trend up">Net +70.5%</span>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Jan–Apr 2026 · n=44 · Sharpest recovery</div>
+        <div class="stacked-bar">
+          <div class="sb-seg" style="background:#22A699;width:77.3%;">77.3%</div>
+          <div class="sb-seg" style="background:#F5A623;width:15.9%;">15.9%</div>
+          <div class="sb-seg" style="background:#D64045;width:6.8%;">6.8%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE + QUARTER BAR -->
+  <div class="section-label">State-Level Breakdown & Quarter-on-Quarter Shift</div>
+  <div class="row">
+
+    <div class="card" style="flex:1.4;">
+      <div class="card-title">Sentiment by State</div>
+      <div class="card-sub">Positive % and Net Sentiment per South Indian state</div>
+      <div class="state-grid">
+
+        <div class="state-card" style="background:#FFF8F5;border-color:#F0C4A0;">
+          <div class="state-name" style="color:var(--tn);">Tamil Nadu</div>
+          <div class="state-n">n=52 · Largest base</div>
+          <div class="state-bar">
+            <div style="background:#22A699;width:59.6%;"></div>
+            <div style="background:#F5A623;width:21.2%;"></div>
+            <div style="background:#D64045;width:19.2%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);margin-top:3px;">
+            <span>Pos 59.6%</span><span>Neu 21.2%</span><span>Neg 19.2%</span>
+          </div>
+          <div class="state-net" style="color:var(--tn);margin-top:6px;">Net +40.4%</div>
+          <div style="font-size:10px;color:var(--txt2);margin-top:3px;">Skin darkening concern highest here</div>
+        </div>
+
+        <div class="state-card" style="background:#F4FBF5;border-color:#A5D6B0;">
+          <div class="state-name" style="color:var(--ka);">Karnataka</div>
+          <div class="state-n">n=49 · Bengaluru-driven</div>
+          <div class="state-bar">
+            <div style="background:#22A699;width:55.1%;"></div>
+            <div style="background:#F5A623;width:32.7%;"></div>
+            <div style="background:#D64045;width:12.2%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);margin-top:3px;">
+            <span>Pos 55.1%</span><span>Neu 32.7%</span><span>Neg 12.2%</span>
+          </div>
+          <div class="state-net" style="color:var(--ka);margin-top:6px;">Net +42.9% · Lowest negative</div>
+          <div style="font-size:10px;color:var(--txt2);margin-top:3px;">Urban metro — product-literate audience</div>
+        </div>
+
+        <div class="state-card" style="background:#E8F4FD;border-color:#90CAF9;">
+          <div class="state-name" style="color:var(--kl);">Kerala</div>
+          <div class="state-n">n=46 · Interesting reversal</div>
+          <div class="state-bar">
+            <div style="background:#22A699;width:47.8%;"></div>
+            <div style="background:#F5A623;width:32.6%;"></div>
+            <div style="background:#D64045;width:19.6%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);margin-top:3px;">
+            <span>Pos 47.8%</span><span>Neu 32.6%</span><span>Neg 19.6%</span>
+          </div>
+          <div class="state-net" style="color:var(--kl);margin-top:6px;">Net +28.3% · Lower than expected</div>
+          <div style="font-size:10px;color:var(--txt2);margin-top:3px;">Waxing culture strong — razor less preferred</div>
+        </div>
+
+        <div class="state-card" style="background:#F9F0FD;border-color:#CE93D8;">
+          <div class="state-name" style="color:var(--ts);">Telangana</div>
+          <div class="state-n">n=25 · High negative signal</div>
+          <div class="state-bar">
+            <div style="background:#22A699;width:48.0%;"></div>
+            <div style="background:#F5A623;width:20.0%;"></div>
+            <div style="background:#D64045;width:32.0%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);margin-top:3px;">
+            <span>Pos 48.0%</span><span>Neu 20.0%</span><span>Neg 32.0%</span>
+          </div>
+          <div class="state-net" style="color:var(--ts);margin-top:6px;">Net +16.0% · Weakest state</div>
+          <div style="font-size:10px;color:var(--txt2);margin-top:3px;">Highest negative % — cost & irritation driven</div>
+        </div>
+
+        <div class="state-card" style="background:#FFF0F0;border-color:#FFCDD2;grid-column:span 2;">
+          <div class="state-name" style="color:var(--ap);">Andhra Pradesh</div>
+          <div class="state-n">n=16 · Interpret directionally only — small base</div>
+          <div class="state-bar">
+            <div style="background:#22A699;width:62.5%;"></div>
+            <div style="background:#F5A623;width:25.0%;"></div>
+            <div style="background:#D64045;width:12.5%;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);margin-top:3px;">
+            <span>Pos 62.5%</span><span>Neu 25.0%</span><span>Neg 12.5%</span>
+          </div>
+          <div class="state-net" style="color:var(--ap);margin-top:6px;">Net +50.0% — Strong positive, low base</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;">
+      <div class="card-title">Quarter-on-Quarter Sentiment Shift</div>
+      <div class="card-sub">How sentiment evolved across the year</div>
+      <div style="margin-top:12px;">
+
+        <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;color:#7C5CBF;margin-bottom:8px;">Q2 2025 — May to Jun</div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Positive</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:37.9%;background:#22A699;"></div></div>
+            <div class="phase-bar-pct" style="color:#22A699;">37.9%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Neutral</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:37.9%;background:#F5A623;"></div></div>
+            <div class="phase-bar-pct" style="color:#F5A623;">37.9%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Negative</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:24.1%;background:#D64045;"></div></div>
+            <div class="phase-bar-pct" style="color:#D64045;">24.1%</div>
+          </div>
+          <div style="font-size:10px;margin-top:5px;color:var(--neg);">Net: +13.8% · High neutral — undecided consumers</div>
+        </div>
+
+        <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;color:#E05C18;margin-bottom:8px;">Q3 2025 — Jul to Sep</div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Positive</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:51.9%;background:#22A699;"></div></div>
+            <div class="phase-bar-pct" style="color:#22A699;">51.9%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Neutral</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:27.8%;background:#F5A623;"></div></div>
+            <div class="phase-bar-pct" style="color:#F5A623;">27.8%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Negative</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:20.4%;background:#D64045;"></div></div>
+            <div class="phase-bar-pct" style="color:#D64045;">20.4%</div>
+          </div>
+          <div style="font-size:10px;margin-top:5px;color:var(--neu);">Net: +31.5% · Improvement but summer irritation present</div>
+        </div>
+
+        <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;color:#2575FC;margin-bottom:8px;">Q4 2025 — Oct to Dec</div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Positive</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:46.9%;background:#22A699;"></div></div>
+            <div class="phase-bar-pct" style="color:#22A699;">46.9%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Neutral</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:26.5%;background:#F5A623;"></div></div>
+            <div class="phase-bar-pct" style="color:#F5A623;">26.5%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Negative</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:26.5%;background:#D64045;"></div></div>
+            <div class="phase-bar-pct" style="color:#D64045;">26.5%</div>
+          </div>
+          <div style="font-size:10px;margin-top:5px;color:var(--neg);">Net: +20.4% · Dip — cartridge cost complaints rise</div>
+        </div>
+
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#0AB68B;margin-bottom:8px;">Q1 2026 — Jan to Apr</div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Positive</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:77.3%;background:#22A699;"></div></div>
+            <div class="phase-bar-pct" style="color:#22A699;">77.3%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Neutral</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:15.9%;background:#F5A623;"></div></div>
+            <div class="phase-bar-pct" style="color:#F5A623;">15.9%</div>
+          </div>
+          <div class="phase-bar-row">
+            <div class="phase-bar-label">Negative</div>
+            <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:6.8%;background:#D64045;"></div></div>
+            <div class="phase-bar-pct" style="color:#D64045;">6.8%</div>
+          </div>
+          <div style="font-size:10px;margin-top:5px;color:var(--pos);">Net: +70.5% · Best quarter — new year routine discovery</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWO LENSES -->
+  <div class="section-label">Two Internal Lenses — Cultural Resonance & Skin Darkening Perception · South India</div>
+  <div class="row">
+
+    <!-- LENS 1 -->
+    <div class="card" style="flex:1;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <div style="width:8px;height:28px;border-radius:2px;background:#003366;flex-shrink:0;"></div>
+        <div class="card-title">Lens 1 — Cultural Resonance</div>
+      </div>
+      <div class="card-sub">Does razor use resonate culturally with South Indian women?</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+        <div style="background:#EFF6FF;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;font-weight:600;color:#003366;margin-bottom:6px;">Culturally resonating</div>
+          <div class="kw-chips">
+            <span class="chip pos">salon alternative</span>
+            <span class="chip pos">convenient</span>
+            <span class="chip pos">quick & easy</span>
+            <span class="chip pos">no appointment</span>
+            <span class="chip pos">clean finish</span>
+          </div>
+        </div>
+        <div style="background:#FEF4F4;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;font-weight:600;color:#D64045;margin-bottom:6px;">Cultural friction points</div>
+          <div class="kw-chips">
+            <span class="chip neg">hair grows thicker</span>
+            <span class="chip neg">shaving not Indian</span>
+            <span class="chip neg">parlour still better</span>
+            <span class="chip neg">waxing preferred</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#F8F9FC;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--txt);margin-bottom:8px;">Cultural comfort with razor use — by state</div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:100px;color:var(--ka);">Karnataka</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:78%;background:#3A7D44;"></div></div>
+          <div class="phase-bar-pct" style="color:#3A7D44;">High</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:100px;color:var(--ap);">Andhra P.</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:65%;background:#C62828;"></div></div>
+          <div class="phase-bar-pct" style="color:#C62828;">Moderate</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:100px;color:var(--tn);">Tamil Nadu</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:52%;background:#E8580C;"></div></div>
+          <div class="phase-bar-pct" style="color:#E8580C;">Mixed</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:100px;color:var(--kl);">Kerala</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:42%;background:#1565C0;"></div></div>
+          <div class="phase-bar-pct" style="color:#1565C0;">Low-Mod</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:100px;color:var(--ts);">Telangana</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:32%;background:#7B1FA2;"></div></div>
+          <div class="phase-bar-pct" style="color:#7B1FA2;">Low</div>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:6px;">Directional — based on negative keyword concentration and waxing preference signals by state</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="insight-row" style="margin-bottom:0;">
+          <div class="insight-icon" style="background:#EFF6FF;font-size:12px;color:#003366;">→</div>
+          <div><div class="insight-title">Kerala is an interesting reversal from the Veet picture</div>
+          <div class="insight-body">Kerala — Veet's strongest state — is comparatively weaker for Gillette Venus (Net +28.3%). Kerala has a deeply entrenched waxing and salon culture where threading and wax are seen as superior. The razor proposition has not displaced that preference here despite high digital literacy.</div></div>
+        </div>
+        <div class="insight-row" style="margin-bottom:0;">
+          <div class="insight-icon" style="background:#EFF6FF;font-size:12px;color:#003366;">→</div>
+          <div><div class="insight-title">"Hair grows back thicker" myth is the primary cultural barrier</div>
+          <div class="insight-body">The single most repeated cultural friction point is the belief that shaving makes hair grow back coarser and darker — appearing across Tamil Nadu, Telangana and Kerala reviews. Unlike Veet, Gillette Venus has not run a myth-busting campaign to address this in India, leaving the belief unchallenged.</div></div>
+        </div>
+        <div class="insight-row" style="margin-bottom:0;">
+          <div class="insight-icon" style="background:#E8F5E9;font-size:12px;color:#3A7D44;">→</div>
+          <div><div class="insight-title">Karnataka is the strongest cultural fit</div>
+          <div class="insight-body">Bengaluru's urban, working-professional demographic is most receptive to the convenience-led razor proposition. Net +42.9% and lowest negative % (12.2%) make it the clearest beachhead market for Gillette Venus in South India.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LENS 2 -->
+    <div class="card" style="flex:1;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <div style="width:8px;height:28px;border-radius:2px;background:#D64045;flex-shrink:0;"></div>
+        <div class="card-title">Lens 2 — Skin Darkening Perception</div>
+      </div>
+      <div class="card-sub">Post-shave darkening — signal strength in South India</div>
+
+      <div style="background:#FEF4F4;border-radius:8px;padding:14px;margin:12px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:600;color:#8B1E21;">Skin darkening-related keywords</div>
+          <div style="font-size:11px;color:var(--txt2);">% of all negative reviews</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:150px;">underarm darkening</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:43%;background:#D64045;"></div></div>
+          <div class="phase-bar-pct" style="color:#D64045;">~43%</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:150px;">post-shave darkness</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:34%;background:#D64045;"></div></div>
+          <div class="phase-bar-pct" style="color:#D64045;">~34%</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:150px;">skin darkening</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:28%;background:#D64045;"></div></div>
+          <div class="phase-bar-pct" style="color:#D64045;">~28%</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:150px;">razor burn</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:22%;background:#E8A838;"></div></div>
+          <div class="phase-bar-pct" style="color:#E8A838;">~22%</div>
+        </div>
+        <div class="phase-bar-row">
+          <div class="phase-bar-label" style="width:150px;">hair grows thicker</div>
+          <div class="phase-bar-outer"><div class="phase-bar-inner" style="width:18%;background:#E8A838;"></div></div>
+          <div class="phase-bar-pct" style="color:#E8A838;">~18%</div>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:8px;">Skin darkening-related keywords account for an estimated 60–70% of all negative reviews in South India</div>
+      </div>
+
+      <div style="background:#FFF5F0;border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:600;color:#7A3800;margin-bottom:8px;">Skin darkening keywords flagged — South India specific</div>
+        <div class="kw-chips">
+          <span class="chip skin">underarm darkening</span>
+          <span class="chip skin">post-shave darkness</span>
+          <span class="chip skin">skin darkening</span>
+          <span class="chip skin">hair grows thicker</span>
+          <span class="chip skin">razor burn</span>
+        </div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:8px;">Orange chips = skin/pigmentation concern signals. These are South India-concentrated — not prominent in North India review data for the same product.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="insight-row" style="margin-bottom:0;">
+          <div class="insight-icon" style="background:var(--neg-lt);font-size:12px;color:#D64045;">!</div>
+          <div><div class="insight-title">Skin darkening is a stronger signal for Venus than for Veet in South India</div>
+          <div class="insight-body">Post-shave underarm and leg darkening is a more active negative theme for Gillette Venus than for Veet. The mechanism is different — friction from the blade vs chemical reaction from cream — but South Indian consumers associate both with darkening. The difference is that Veet has begun a myth-busting narrative; Gillette Venus has not.</div></div>
+        </div>
+        <div class="insight-row" style="margin-bottom:0;">
+          <div class="insight-icon" style="background:var(--neg-lt);font-size:12px;color:#D64045;">!</div>
+          <div><div class="insight-title">Telangana carries the highest skin darkening concern volume</div>
+          <div class="insight-body">Telangana's 32% negative rate — the highest of any state — is disproportionately driven by skin darkening and razor burn keywords. Combined with the "hair grows thicker" myth, this creates a compounded perception problem that is pushing consumers back to salon waxing in this market.</div></div>
+        </div>
+        <div class="insight-row" style="margin-bottom:0;">
+          <div class="insight-icon" style="background:var(--pos-lt);font-size:12px;color:#22A699;">→</div>
+          <div><div class="insight-title">"No darkening" is also a top positive keyword — the concern is address-able</div>
+          <div class="insight-body">Reviews that explicitly say "no darkening on my underarms" and "no razor burn" are among the most helpful-voted reviews in the dataset. Consumers are actively looking for this reassurance — and when the product delivers, they say so loudly. A targeted South India communication around the post-shave darkening myth could convert a significant portion of neutrals and fence-sitters.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEYWORDS REFERENCE -->
+  <div class="section-label">Keyword Reference — South India Positive & Negative Themes</div>
+  <div class="row">
+    <div class="card" style="flex:1;">
+      <div class="card-title">All Positive Keywords</div>
+      <div class="kw-chips" style="margin-top:8px;">
+        <span class="chip pos">smooth shave</span>
+        <span class="chip pos">no razor burn</span>
+        <span class="chip pos">no darkening</span>
+        <span class="chip pos">long lasting cartridge</span>
+        <span class="chip pos">sensitive skin safe</span>
+        <span class="chip pos">no irritation</span>
+        <span class="chip pos">pivoting head</span>
+        <span class="chip pos">moisturising strip</span>
+        <span class="chip pos">no ingrown hair</span>
+        <span class="chip pos">salon alternative</span>
+        <span class="chip pos">comfortable grip</span>
+        <span class="chip pos">clean finish</span>
+        <span class="chip pos">genuine product</span>
+        <span class="chip pos">fast delivery</span>
+      </div>
+    </div>
+    <div class="card" style="flex:1;">
+      <div class="card-title">All Negative Keywords</div>
+      <div class="kw-chips" style="margin-top:8px;">
+        <span class="chip skin">razor burn</span>
+        <span class="chip skin">skin darkening</span>
+        <span class="chip skin">underarm darkening</span>
+        <span class="chip skin">post-shave darkness</span>
+        <span class="chip skin">hair grows thicker</span>
+        <span class="chip neg">expensive cartridge</span>
+        <span class="chip neg">ingrown hair</span>
+        <span class="chip neg">blade rusted</span>
+        <span class="chip neg">coarse hair stubble</span>
+        <span class="chip neg">irritation redness</span>
+        <span class="chip neg">counterfeit</span>
+        <span class="chip neg">cartridge unavailable</span>
+        <span class="chip neg">overpriced</span>
+        <span class="chip neg">rough skin after</span>
+      </div>
+      <div style="font-size:10px;color:#7A3800;margin-top:8px;">Orange chips = skin darkening / pigmentation concern signals</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Gillette Venus — South India Sentiment Report · May 2025–Apr 2026 · n=188 (Location-Inferred) · Tamil Nadu · Karnataka · Kerala · Telangana · Andhra Pradesh</p>
+  <p>Women's Range Only · Age / Gender / City Tier Excluded · Net Sentiment = (Pos−Neg)/Total · Quarters only — no campaign phase names</p>
+</div>
+
+<script>
+const months  = ['May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26'];
+const posData = [42.9, 33.3, 55.6, 42.1, 58.8, 50.0, 33.3, 55.6, 87.5, 73.3, 69.2, 50.0];
+const neuData = [28.6, 46.7, 22.2, 31.6, 29.4, 31.2, 40.0, 11.1,  6.2, 26.7, 15.4, 41.7];
+const negData = [28.6, 20.0, 22.2, 26.3, 11.8, 18.8, 26.7, 33.3,  6.2,  0.0, 15.4,  8.3];
+
+// Quarter background bands
+const qColors = [
+  '#7C5CBF','#7C5CBF',             // Q2 May-Jun
+  '#E05C18','#E05C18','#E05C18',   // Q3 Jul-Sep
+  '#2575FC','#2575FC','#2575FC',   // Q4 Oct-Dec
+  '#0AB68B','#0AB68B','#0AB68B','#0AB68B', // Q1 Jan-Apr
+];
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Positive %', data: posData, backgroundColor: '#22A699', stack: 'sent' },
+      { label: 'Neutral %',  data: neuData, backgroundColor: '#F5A623', stack: 'sent' },
+      { label: 'Negative %', data: negData, backgroundColor: '#D64045', stack: 'sent' },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%` } }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        ticks: { font: { size: 10 }, autoSkip: false },
+        grid: { display: false }
+      },
+      y: {
+        stacked: true, max: 100,
+        ticks: { callback: v => v+'%', font: { size: 10 } },
+        grid: { color: '#EEF1F7' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
